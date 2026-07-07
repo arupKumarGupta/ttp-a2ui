@@ -7,32 +7,44 @@ import { A2UIRenderer } from "./a2ui/A2UIRenderer";
 import { TEMPLATES } from "./a2ui/templates";
 
 export default function App() {
-  // Tab selector: 'agent' or 'timesheet'
-  const [activeView, setActiveView] = useState<"agent" | "timesheet">("agent");
+  // Simple hash router state
+  const [route, setRoute] = useState<string>(window.location.hash || "#/");
 
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("travelDashboard");
-  const [jsonInput, setJsonInput] = useState<string>("");
+  useEffect(() => {
+    const handleHashChange = () => {
+      setRoute(window.location.hash || "#/");
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  const isTimesheetRoute = route.startsWith("#/timesheet") || window.location.pathname === "/timesheet";
+
+  // Common rendering schemas & logs
   const [schema, setSchema] = useState<A2UISchema | null>(null);
+  const [jsonInput, setJsonInput] = useState<string>("");
   const [parseError, setParseError] = useState<string | null>(null);
   const [actionLogs, setActionLogs] = useState<A2UIActionEvent[]>([]);
 
-  // Agent Chat States
+  // Agent Chat States (only for playground)
   const [agentPrompt, setAgentPrompt] = useState<string>("");
   const [agentLoading, setAgentLoading] = useState<boolean>(false);
   const [agentStatus, setAgentStatus] = useState<string>("");
-  const [agentSocket, setAgentSocket] = useState<WebSocket | null>(null);
+  const [socket, setSocket] = useState<WebSocket | null>(null);
 
-  // Initialize with default template on mount
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("travelDashboard");
+
+  // Initialize templates if in playground route
   useEffect(() => {
-    if (activeView === "agent") {
+    if (!isTimesheetRoute) {
       const defaultTemplate = TEMPLATES.travelDashboard;
       const initialJson = JSON.stringify(defaultTemplate.schema, null, 2);
       setJsonInput(initialJson);
       setSchema(defaultTemplate.schema);
     }
-  }, [activeView]);
+  }, [isTimesheetRoute]);
 
-  // Establish WebSocket connection based on the active tab
+  // Establish WebSocket connection based on the active route
   useEffect(() => {
     let ws: WebSocket;
     let reconnectTimeout: number;
@@ -41,7 +53,7 @@ export default function App() {
       setSchema(null);
       setJsonInput("");
       
-      const path = activeView === "timesheet" ? "timesheet" : "agent";
+      const path = isTimesheetRoute ? "timesheet" : "agent";
       console.log(`Connecting to WebSocket: ws://localhost:8000/ws/${path}`);
       ws = new WebSocket(`ws://localhost:8000/ws/${path}`);
 
@@ -49,13 +61,13 @@ export default function App() {
         try {
           const msg = JSON.parse(event.data);
           
-          if (activeView === "timesheet") {
-            // For timesheet, the backend compiles and streams the raw schema directly
+          if (isTimesheetRoute) {
+            // Fullscreen Timesheet receives Compiled Layouts directly from Agent
             setSchema(msg as A2UISchema);
             setJsonInput(JSON.stringify(msg, null, 2));
             setParseError(null);
           } else {
-            // For generative agent, it streams wrapping messages
+            // Playground receives wrapper messages
             if (msg.type === "status") {
               setAgentStatus(msg.message);
               if (msg.schema) {
@@ -86,13 +98,13 @@ export default function App() {
       };
 
       ws.onclose = () => {
-        console.log(`Agent WebSocket /ws/${path} closed. Reconnecting...`);
+        console.log(`WebSocket /ws/${path} closed. Reconnecting...`);
         setAgentLoading(false);
         setAgentStatus("");
         reconnectTimeout = window.setTimeout(connect, 3000);
       };
 
-      setAgentSocket(ws);
+      setSocket(ws);
     };
 
     connect();
@@ -104,17 +116,17 @@ export default function App() {
       }
       clearTimeout(reconnectTimeout);
     };
-  }, [activeView]);
+  }, [isTimesheetRoute]);
 
-  // Send prompt to the AI Agent
+  // Send prompt to the AI Agent (Playground only)
   const handleAgentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!agentPrompt.trim() || agentLoading || !agentSocket) return;
+    if (!agentPrompt.trim() || agentLoading || !socket) return;
 
     setAgentLoading(true);
     setAgentStatus("Sending query to Gemini Agent...");
     
-    agentSocket.send(JSON.stringify({
+    socket.send(JSON.stringify({
       prompt: agentPrompt.trim()
     }));
     
@@ -154,7 +166,7 @@ export default function App() {
     }
   };
 
-  // Change templates via dropdown (only visible in Agent view)
+  // Change templates via dropdown (Playground only)
   const handleTemplateSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const key = e.target.value;
     setSelectedTemplate(key);
@@ -173,8 +185,8 @@ export default function App() {
     setActionLogs(prev => [event, ...prev]);
 
     // Send actions back to server for bidirectional state mutation (like Timesheet CRUD)
-    if (agentSocket && agentSocket.readyState === WebSocket.OPEN) {
-      agentSocket.send(JSON.stringify(event));
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(event));
     }
   };
 
@@ -189,6 +201,35 @@ export default function App() {
     setActionLogs([]);
   };
 
+  // Render Full Screen Mode for Timesheet Route
+  if (isTimesheetRoute) {
+    return (
+      <div className="fullscreen-timesheet-container" style={{ 
+        minHeight: "100vh", 
+        width: "100vw", 
+        background: "var(--bg-app, #0a0b0e)",
+        color: "var(--text-primary, #f3f4f6)",
+        padding: "40px 24px",
+        boxSizing: "border-box",
+        display: "flex",
+        justifyContent: "center",
+        overflowY: "auto"
+      }}>
+        <div style={{ width: "100%", maxWidth: "1200px" }}>
+          {schema ? (
+            <A2UIRenderer schema={schema} onAction={handleUIAction} />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "80vh" }}>
+              <div className="spinner"></div>
+              <p style={{ marginTop: "16px", color: "var(--text-secondary)" }}>Connecting to Agent Timesheet Server...</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Render playground view
   return (
     <div className="app-container">
       {/* 1. Global Navigation Bar */}
@@ -225,47 +266,32 @@ export default function App() {
         </div>
       </header>
 
-      {/* 2. Interactive Navigation Tabs */}
+      {/* 2. Short Quick navigation link to Timesheet portal */}
       <div style={{ 
         display: "flex", 
-        background: "var(--bg-card, #13151a)", 
-        borderBottom: "1px solid var(--border-color, #242838)",
-        width: "100%"
+        background: "rgba(139, 92, 246, 0.05)", 
+        borderBottom: "1px solid var(--border-color)",
+        padding: "10px 24px",
+        justifyContent: "space-between",
+        alignItems: "center"
       }}>
-        <button
-          onClick={() => setActiveView("agent")}
-          style={{
-            flex: 1,
-            padding: "14px",
-            background: activeView === "agent" ? "rgba(139, 92, 246, 0.1)" : "transparent",
-            color: activeView === "agent" ? "#8b5cf6" : "var(--text-secondary)",
-            border: "none",
-            borderBottom: activeView === "agent" ? "2px solid #8b5cf6" : "none",
-            fontWeight: 600,
-            fontSize: "0.85rem",
-            cursor: "pointer",
-            transition: "all 0.2s"
+        <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+          Want to view the full screen A2UI application?
+        </span>
+        <a 
+          href="#/timesheet" 
+          style={{ 
+            fontSize: "0.75rem", 
+            color: "#8b5cf6", 
+            fontWeight: 600, 
+            textDecoration: "none",
+            display: "flex",
+            alignItems: "center",
+            gap: "4px"
           }}
         >
-          🔮 Generative Agent Playground
-        </button>
-        <button
-          onClick={() => setActiveView("timesheet")}
-          style={{
-            flex: 1,
-            padding: "14px",
-            background: activeView === "timesheet" ? "rgba(139, 92, 246, 0.1)" : "transparent",
-            color: activeView === "timesheet" ? "#8b5cf6" : "var(--text-secondary)",
-            border: "none",
-            borderBottom: activeView === "timesheet" ? "2px solid #8b5cf6" : "none",
-            fontWeight: 600,
-            fontSize: "0.85rem",
-            cursor: "pointer",
-            transition: "all 0.2s"
-          }}
-        >
-          🕒 Timesheet Dashboard Portal (Live A2UI)
-        </button>
+          Open Fullscreen Timesheet Portal ➜
+        </a>
       </div>
 
       {/* 3. Main split-pane workspace */}
@@ -274,68 +300,53 @@ export default function App() {
         {/* Left Side: Schema JSON Editor */}
         <section className="editor-pane">
           
-          {/* AI Agent prompt bar (Only visible in Agent view) */}
-          {activeView === "agent" && (
-            <div style={{ 
-              padding: "12px 16px", 
-              borderBottom: "1px solid var(--border-color)", 
-              background: "linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(59, 130, 246, 0.03))",
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.8rem", fontWeight: 600, color: "var(--color-primary)" }}>
-                <Cpu size={14} />
-                <span>Ask AI Agent to Generate UI</span>
-              </div>
-              
-              <form onSubmit={handleAgentSubmit} style={{ display: "flex", gap: "8px" }}>
-                <input
-                  type="text"
-                  value={agentPrompt}
-                  onChange={(e) => setAgentPrompt(e.target.value)}
-                  placeholder="e.g. Flight from JFK to LHR with stormy weather..."
-                  style={{
-                    flex: 1,
-                    background: "var(--bg-input)",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: "4px",
-                    padding: "6px 10px",
-                    color: "var(--text-primary)",
-                    fontSize: "0.8rem",
-                    outline: "none"
-                  }}
-                  disabled={agentLoading}
-                />
-                <button 
-                  type="submit" 
-                  disabled={agentLoading || !agentPrompt.trim()}
-                  className="btn-header"
-                  style={{ padding: "6px 12px", fontSize: "0.75rem" }}
-                >
-                  {agentLoading ? "Thinking..." : "Generate"}
-                </button>
-              </form>
-              {agentStatus && (
-                <span style={{ fontSize: "0.7rem", color: "var(--color-warning)" }}>
-                  ● {agentStatus}
-                </span>
-              )}
+          {/* AI Agent prompt bar */}
+          <div style={{ 
+            padding: "12px 16px", 
+            borderBottom: "1px solid var(--border-color)", 
+            background: "linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(59, 130, 246, 0.03))",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.8rem", fontWeight: 600, color: "var(--color-primary)" }}>
+              <Cpu size={14} />
+              <span>Ask AI Agent to Generate UI</span>
             </div>
-          )}
-
-          {activeView === "timesheet" && (
-            <div style={{ 
-              padding: "12px 16px", 
-              borderBottom: "1px solid var(--border-color)", 
-              background: "rgba(16, 185, 129, 0.05)",
-              fontSize: "0.75rem",
-              color: "#10b981",
-              fontWeight: 500
-            }}>
-              ● Timesheet Database Synchronized. Editing JSON here shows compiled schema details in real-time.
-            </div>
-          )}
+            
+            <form onSubmit={handleAgentSubmit} style={{ display: "flex", gap: "8px" }}>
+              <input
+                type="text"
+                value={agentPrompt}
+                onChange={(e) => setAgentPrompt(e.target.value)}
+                placeholder="e.g. Flight from JFK to LHR with stormy weather..."
+                style={{
+                  flex: 1,
+                  background: "var(--bg-input)",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "4px",
+                  padding: "6px 10px",
+                  color: "var(--text-primary)",
+                  fontSize: "0.8rem",
+                  outline: "none"
+                }}
+                disabled={agentLoading}
+              />
+              <button 
+                type="submit" 
+                disabled={agentLoading || !agentPrompt.trim()}
+                className="btn-header"
+                style={{ padding: "6px 12px", fontSize: "0.75rem" }}
+              >
+                {agentLoading ? "Thinking..." : "Generate"}
+              </button>
+            </form>
+            {agentStatus && (
+              <span style={{ fontSize: "0.7rem", color: "var(--color-warning)" }}>
+                ● {agentStatus}
+              </span>
+            )}
+          </div>
 
           <div className="pane-header">
             <div className="pane-title">
@@ -343,19 +354,17 @@ export default function App() {
               Agent Schema Payload
             </div>
             
-            {activeView === "agent" && (
-              <select 
-                className="template-selector"
-                value={selectedTemplate} 
-                onChange={handleTemplateSelect}
-              >
-                {Object.entries(TEMPLATES).map(([key, val]) => (
-                  <option key={key} value={key}>
-                    {val.name}
-                  </option>
-                ))}
-              </select>
-            )}
+            <select 
+              className="template-selector"
+              value={selectedTemplate} 
+              onChange={handleTemplateSelect}
+            >
+              {Object.entries(TEMPLATES).map(([key, val]) => (
+                <option key={key} value={key}>
+                  {val.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="code-editor-container">
@@ -391,7 +400,7 @@ export default function App() {
               <div className="render-container">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "-12px" }}>
                   <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <Eye size={12} /> Dynamic Preview ({activeView === "timesheet" ? "Timesheet View" : "Playground View"})
+                    <Eye size={12} /> Dynamic Preview
                   </span>
                   <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
                     Schema Root: <code>{schema.surface}</code>

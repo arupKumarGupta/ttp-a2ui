@@ -11,6 +11,7 @@ import FlatTable from "../components/FlatTable";
 import WorkerGroupTable from "../components/WorkerGroupTable";
 import CustomerGroupTable from "../components/CustomerGroupTable";
 import TimeEntryFormModal from "../components/TimeEntryFormModal";
+import TabBar from "../components/TabBar";
 
 /**
  * Registry mapping component string keys to React components.
@@ -28,7 +29,8 @@ export const A2UIRegistry: Record<string, React.ComponentType<any>> = {
   FlatTable,
   WorkerGroupTable,
   CustomerGroupTable,
-  TimeEntryFormModal
+  TimeEntryFormModal,
+  TabBar
 };
 
 /**
