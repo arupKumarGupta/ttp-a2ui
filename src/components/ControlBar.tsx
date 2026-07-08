@@ -4,16 +4,19 @@ import { Search, Calendar, X, ChevronDown } from 'lucide-react';
 import type { ViewByOption } from '../types_timesheet';
 import type { OnA2UIAction } from '../a2ui/types';
 
-// Styled Components
 const PickerContainer = styled.div`
   position: relative;
+  display: flex;
+  align-items: center;
 `;
 
 const PickerButton = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
+  height: 40px;
+  box-sizing: border-box;
+  padding: 0 14px;
   background: var(--bg-input, #1a1d28);
   border: 1px solid var(--border-color, #242838);
   border-radius: 6px;
