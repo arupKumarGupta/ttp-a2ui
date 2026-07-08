@@ -111,9 +111,15 @@ const DateInput = styled.input`
   outline: none;
   width: 100%;
   box-sizing: border-box;
+  cursor: pointer;
   
   &:focus {
     border-color: var(--color-primary);
+  }
+
+  &::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
   }
 `;
 
@@ -360,6 +366,7 @@ export default function ControlBar({
                         type="date" 
                         value={tempStartDate}
                         onChange={(e) => setTempStartDate(e.target.value)}
+                        onClick={(e) => { try { e.currentTarget.showPicker(); } catch(_) {} }}
                         required
                       />
                     </InputGroup>
@@ -369,6 +376,7 @@ export default function ControlBar({
                         type="date" 
                         value={tempEndDate}
                         onChange={(e) => setTempEndDate(e.target.value)}
+                        onClick={(e) => { try { e.currentTarget.showPicker(); } catch(_) {} }}
                         required
                       />
                     </InputGroup>
