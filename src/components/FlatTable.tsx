@@ -127,8 +127,10 @@ export default function FlatTable({
                     </td>
                     <td>
                       <div className="duration-info">
-                        <Clock size={12} className="clock-icon" />
-                        <span>{formatMinutes(durationMins)}</span>
+                        <span>
+                          <Clock size={12} className="clock-icon" />
+                          {formatMinutes(durationMins)}
+                        </span>
                         {entry.startTime && entry.endTime && (
                           <span className="times-sub">
                             ({entry.startTime} - {entry.endTime})
