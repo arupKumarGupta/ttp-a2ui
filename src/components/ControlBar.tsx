@@ -123,7 +123,7 @@ export default function ControlBar({
       <div className="control-bar">
         {/* Search */}
         <div className="search-box">
-          <Search size={18} className="search-icon" />
+          <Search size={18} color="#9ca3af" className="search-icon" />
           <input
             type="text"
             placeholder="Search by worker, customer, location..."
@@ -132,7 +132,7 @@ export default function ControlBar({
           />
           {searchQuery && (
             <button className="clear-btn" onClick={() => handleSearchChange('')}>
-              <X size={14} />
+              <X size={14} color="#9ca3af" />
             </button>
           )}
         </div>
@@ -161,7 +161,7 @@ export default function ControlBar({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Calendar size={16} style={{ color: 'var(--color-primary, #8b5cf6)' }} />
+              <Calendar size={16} color="#8b5cf6" />
               <span style={{ fontWeight: 500 }}>{getFilterLabel()}</span>
             </div>
             
@@ -178,10 +178,10 @@ export default function ControlBar({
                   }}
                   title="Clear Date Filter"
                 >
-                  <X size={12} />
+                  <X size={12} color="#9ca3af" />
                 </span>
               )}
-              <ChevronDown size={14} style={{ color: 'var(--text-muted)' }} />
+              <ChevronDown size={14} color="#9ca3af" />
             </div>
           </button>
 
