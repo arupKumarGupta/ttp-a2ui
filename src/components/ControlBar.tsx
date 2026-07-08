@@ -56,7 +56,6 @@ export default function ControlBar({
 
   const handlePresetSelect = (preset: string) => {
     if (preset === 'custom') {
-      // Don't trigger action yet, wait for Apply Range
       return;
     }
     
@@ -139,37 +138,38 @@ export default function ControlBar({
         </div>
 
         {/* Date Dropdown */}
-        <div className="date-picker-group" ref={dropdownRef} style={{ position: 'relative' }}>
-          <div 
+        <div className="date-picker-group-container" ref={dropdownRef} style={{ position: 'relative' }}>
+          <button 
+            type="button"
             onClick={() => setIsOpen(!isOpen)}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              padding: '8px 12px',
+              padding: '10px 14px',
               background: 'var(--bg-input, #1a1d28)',
               border: '1px solid var(--border-color, #242838)',
-              borderRadius: 'var(--radius-sm, 6px)',
+              borderRadius: '6px',
               cursor: 'pointer',
               fontSize: '0.85rem',
               color: 'var(--text-primary)',
-              minWidth: '200px',
+              minWidth: '220px',
               justifyContent: 'space-between',
-              userSelect: 'none'
+              userSelect: 'none',
+              fontFamily: 'var(--font-sans)',
+              transition: 'border-color 0.2s'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Calendar size={16} style={{ color: 'var(--text-muted)' }} />
-              <span>{getFilterLabel()}</span>
+              <Calendar size={16} style={{ color: 'var(--color-primary, #8b5cf6)' }} />
+              <span style={{ fontWeight: 500 }}>{getFilterLabel()}</span>
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               {datePreset !== 'all' && (
-                <button 
+                <span 
                   onClick={handleClearDateFilter}
                   style={{
-                    background: 'none',
-                    border: 'none',
                     color: 'var(--text-muted)',
                     cursor: 'pointer',
                     padding: '2px',
@@ -179,11 +179,11 @@ export default function ControlBar({
                   title="Clear Date Filter"
                 >
                   <X size={12} />
-                </button>
+                </span>
               )}
               <ChevronDown size={14} style={{ color: 'var(--text-muted)' }} />
             </div>
-          </div>
+          </button>
 
           {isOpen && (
             <div 
