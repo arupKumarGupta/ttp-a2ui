@@ -1,12 +1,164 @@
 import React, { useState, useRef, useEffect } from 'react';
+import styled from 'styled-components';
 import { Search, Calendar, X, ChevronDown } from 'lucide-react';
 import type { ViewByOption } from '../types_timesheet';
 import type { OnA2UIAction } from '../a2ui/types';
 
+// Styled Components
+const PickerContainer = styled.div`
+  position: relative;
+`;
+
+const PickerButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-input, #1a1d28);
+  border: 1px solid var(--border-color, #242838);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  min-width: 220px;
+  justify-content: space-between;
+  user-select: none;
+  font-family: var(--font-sans);
+  transition: border-color 0.2s;
+  
+  &:hover {
+    border-color: var(--color-primary, #8b5cf6);
+  }
+`;
+
+const DropdownMenu = styled.div`
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background-color: var(--bg-card, #14161f);
+  border: 1px solid var(--border-color, #242838);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg, 0 10px 15px rgba(0,0,0,0.5));
+  z-index: 100;
+  width: 320px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const PresetButton = styled.button<{ $active: boolean }>`
+  text-align: left;
+  padding: 8px 10px;
+  background: ${props => props.$active ? 'rgba(139, 92, 246, 0.1)' : 'transparent'};
+  border: none;
+  border-radius: 4px;
+  color: ${props => props.$active ? '#8b5cf6' : 'var(--text-primary)'};
+  font-size: 0.8rem;
+  font-weight: ${props => props.$active ? 600 : 500};
+  cursor: pointer;
+  transition: all 0.15s;
+  
+  &:hover {
+    background: ${props => props.$active ? 'rgba(139, 92, 246, 0.1)' : 'var(--bg-input)'};
+  }
+`;
+
+const CustomRangeTitle = styled.button<{ $active: boolean }>`
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  color: ${props => props.$active ? '#8b5cf6' : 'var(--text-primary)'};
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 8px;
+`;
+
+const CustomForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 10px;
+`;
+
+const DateInputsRow = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
+const InputGroup = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const InputLabel = styled.label`
+  font-size: 0.65rem;
+  color: var(--text-muted);
+`;
+
+const DateInput = styled.input`
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  padding: 6px 8px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  
+  &:focus {
+    border-color: var(--color-primary);
+  }
+`;
+
+const ApplyButton = styled.button`
+  background: var(--color-primary, #8b5cf6);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 4px;
+  
+  &:hover {
+    background: #7c3aed;
+  }
+`;
+
+// Force Lucide icons stroke via styled-components !important rules
+const StyledCalendar = styled(Calendar)`
+  color: #8b5cf6 !important;
+  stroke: #8b5cf6 !important;
+`;
+
+const StyledChevronDown = styled(ChevronDown)`
+  color: #9ca3af !important;
+  stroke: #9ca3af !important;
+`;
+
+const StyledX = styled(X)`
+  color: #9ca3af !important;
+  stroke: #9ca3af !important;
+`;
+
+const StyledSearch = styled(Search)`
+  color: #9ca3af !important;
+  stroke: #9ca3af !important;
+`;
+
 interface ControlBarProps {
   id: string;
   searchQuery: string;
-  datePreset?: string; // 'all' | 'last_week' | 'this_month' | 'last_month' | 'custom'
+  datePreset?: string;
   startDate?: string;
   endDate?: string;
   viewBy: ViewByOption;
@@ -123,7 +275,7 @@ export default function ControlBar({
       <div className="control-bar">
         {/* Search */}
         <div className="search-box">
-          <Search size={18} color="#9ca3af" className="search-icon" />
+          <StyledSearch size={18} className="search-icon" />
           <input
             type="text"
             placeholder="Search by worker, customer, location..."
@@ -132,36 +284,16 @@ export default function ControlBar({
           />
           {searchQuery && (
             <button className="clear-btn" onClick={() => handleSearchChange('')}>
-              <X size={14} color="#9ca3af" />
+              <StyledX size={14} />
             </button>
           )}
         </div>
 
         {/* Date Dropdown */}
-        <div className="date-picker-group-container" ref={dropdownRef} style={{ position: 'relative' }}>
-          <button 
-            type="button"
-            onClick={() => setIsOpen(!isOpen)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 14px',
-              background: 'var(--bg-input, #1a1d28)',
-              border: '1px solid var(--border-color, #242838)',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-              color: 'var(--text-primary)',
-              minWidth: '220px',
-              justifyContent: 'space-between',
-              userSelect: 'none',
-              fontFamily: 'var(--font-sans)',
-              transition: 'border-color 0.2s'
-            }}
-          >
+        <PickerContainer ref={dropdownRef}>
+          <PickerButton type="button" onClick={() => setIsOpen(!isOpen)}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Calendar size={16} color="#8b5cf6" />
+              <StyledCalendar size={16} />
               <span style={{ fontWeight: 500 }}>{getFilterLabel()}</span>
             </div>
             
@@ -178,32 +310,15 @@ export default function ControlBar({
                   }}
                   title="Clear Date Filter"
                 >
-                  <X size={12} color="#9ca3af" />
+                  <StyledX size={12} />
                 </span>
               )}
-              <ChevronDown size={14} color="#9ca3af" />
+              <StyledChevronDown size={14} />
             </div>
-          </button>
+          </PickerButton>
 
           {isOpen && (
-            <div 
-              style={{
-                position: 'absolute',
-                top: 'calc(100% + 6px)',
-                left: 0,
-                background: 'var(--bg-card, #14161f)',
-                border: '1px solid var(--border-color, #242838)',
-                borderRadius: '8px',
-                boxShadow: 'var(--shadow-lg, 0 10px 15px rgba(0,0,0,0.5))',
-                zIndex: 100,
-                width: '320px',
-                padding: '16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px'
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
+            <DropdownMenu onClick={(e) => e.stopPropagation()}>
               <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Filter by Date
               </div>
@@ -216,122 +331,56 @@ export default function ControlBar({
                   { key: 'this_month', label: 'This Month' },
                   { key: 'last_month', label: 'Last Month' }
                 ].map((preset) => (
-                  <button
+                  <PresetButton
                     key={preset.key}
                     type="button"
+                    $active={datePreset === preset.key}
                     onClick={() => handlePresetSelect(preset.key)}
-                    style={{
-                      textAlign: 'left',
-                      padding: '8px 10px',
-                      background: datePreset === preset.key ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
-                      border: 'none',
-                      borderRadius: '4px',
-                      color: datePreset === preset.key ? '#8b5cf6' : 'var(--text-primary)',
-                      fontSize: '0.8rem',
-                      fontWeight: datePreset === preset.key ? 600 : 500,
-                      cursor: 'pointer',
-                      transition: 'all 0.15s'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (datePreset !== preset.key) e.currentTarget.style.background = 'var(--bg-input)';
-                    }}
-                    onMouseLeave={(e) => {
-                      if (datePreset !== preset.key) e.currentTarget.style.background = 'transparent';
-                    }}
                   >
                     {preset.label}
-                  </button>
+                  </PresetButton>
                 ))}
               </div>
 
               {/* Custom Date Range Option */}
               <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '10px', marginTop: '4px' }}>
-                <button
+                <CustomRangeTitle
                   type="button"
+                  $active={datePreset === 'custom'}
                   onClick={() => handlePresetSelect('custom')}
-                  style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '6px 10px',
-                    background: 'transparent',
-                    border: 'none',
-                    color: datePreset === 'custom' ? '#8b5cf6' : 'var(--text-primary)',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    marginBottom: '8px'
-                  }}
                 >
                   📅 Custom Date Range
-                </button>
+                </CustomRangeTitle>
 
-                <form onSubmit={handleApplyCustomRange} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 10px' }}>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Start Date</label>
-                      <input 
+                <CustomForm onSubmit={handleApplyCustomRange}>
+                  <DateInputsRow>
+                    <InputGroup>
+                      <InputLabel>Start Date</InputLabel>
+                      <DateInput 
                         type="date" 
                         value={tempStartDate}
                         onChange={(e) => setTempStartDate(e.target.value)}
                         required
-                        style={{
-                          background: 'var(--bg-input)',
-                          border: '1px solid var(--border-color)',
-                          borderRadius: '4px',
-                          color: 'var(--text-primary)',
-                          fontSize: '0.75rem',
-                          padding: '6px 8px',
-                          outline: 'none',
-                          width: '100%',
-                          boxSizing: 'border-box'
-                        }}
                       />
-                    </div>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>End Date</label>
-                      <input 
+                    </InputGroup>
+                    <InputGroup>
+                      <InputLabel>End Date</InputLabel>
+                      <DateInput 
                         type="date" 
                         value={tempEndDate}
                         onChange={(e) => setTempEndDate(e.target.value)}
                         required
-                        style={{
-                          background: 'var(--bg-input)',
-                          border: '1px solid var(--border-color)',
-                          borderRadius: '4px',
-                          color: 'var(--text-primary)',
-                          fontSize: '0.75rem',
-                          padding: '6px 8px',
-                          outline: 'none',
-                          width: '100%',
-                          boxSizing: 'border-box'
-                        }}
                       />
-                    </div>
-                  </div>
-                  <button 
-                    type="submit"
-                    style={{
-                      background: 'var(--color-primary, #8b5cf6)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      padding: '8px',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'background 0.2s',
-                      marginTop: '4px'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#7c3aed'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'var(--color-primary)'}
-                  >
+                    </InputGroup>
+                  </DateInputsRow>
+                  <ApplyButton type="submit">
                     Apply Range
-                  </button>
-                </form>
+                  </ApplyButton>
+                </CustomForm>
               </div>
-            </div>
+            </DropdownMenu>
           )}
-        </div>
+        </PickerContainer>
 
         {/* View Toggle */}
         <div className="view-by-group">
