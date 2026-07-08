@@ -88,7 +88,7 @@ export default function WorkerGroupTable({
                       {isWorkerExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                     </span>
                     <div className="worker-avatar small-avatar">
-                      {group.worker.name.charAt(0)}
+                      {group.worker.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                     </div>
                     <div>
                       <span className="group-main-name">{group.worker.name}</span>
@@ -166,8 +166,10 @@ export default function WorkerGroupTable({
                               </td>
                               <td>
                                 <div className="duration-info">
-                                  <Clock size={12} className="clock-icon" />
-                                  <span>{formatMinutes(durationMins)}</span>
+                                  <span>
+                                    <Clock size={12} className="clock-icon" />
+                                    {formatMinutes(durationMins)}
+                                  </span>
                                   {entry.startTime && entry.endTime && (
                                     <span className="times-sub">
                                       ({entry.startTime} - {entry.endTime})

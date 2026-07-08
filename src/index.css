@@ -9,6 +9,44 @@
   --bg-card: #14161f;
   --bg-editor: #0f1016;
   --bg-input: #1a1d28;
+
+  /* Timesheet HSL system and variables compatibility */
+  --primary-h: 262;
+  --primary-s: 85%;
+  --primary-l: 66%;
+  --primary: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  --primary-hover: hsl(var(--primary-h), var(--primary-s), calc(var(--primary-l) + 8%));
+  --primary-light: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.12);
+  --primary-border: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.3);
+
+  --success-h: 142;
+  --success-s: 72%;
+  --success-l: 55%;
+  --success: hsl(var(--success-h), var(--success-s), var(--success-l));
+  --success-light: hsla(var(--success-h), var(--success-s), var(--success-l), 0.12);
+
+  --warning-h: 38;
+  --warning-s: 90%;
+  --warning-l: 60%;
+  --warning: hsl(var(--warning-h), var(--warning-s), var(--warning-l));
+  --warning-light: hsla(var(--warning-h), var(--warning-s), var(--warning-l), 0.12);
+
+  --danger-h: 350;
+  --danger-s: 85%;
+  --danger-l: 65%;
+  --danger: hsl(var(--danger-h), var(--danger-s), var(--danger-l));
+  --danger-light: hsla(var(--danger-h), var(--danger-s), var(--danger-l), 0.12);
+  --danger-hover: hsl(var(--danger-h), var(--danger-s), calc(var(--danger-l) + 8%));
+
+  --bg-primary: #0b0c10;
+  --bg-secondary: #14161f;
+  --bg-tertiary: #1a1d28;
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --text-inverse: #ffffff;
+
+  --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --font-family: var(--font-sans);
   
   --border-color: #242838;
   --border-focus: #7c3aed;

@@ -128,7 +128,7 @@ export default function CustomerGroupTable({
                               {isWorkerExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                             </span>
                             <div className="worker-avatar micro-avatar">
-                              {workerGroup.worker.name.charAt(0)}
+                              {workerGroup.worker.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                             </div>
                             <div>
                               <span className="worker-nested-name">{workerGroup.worker.name}</span>
@@ -188,8 +188,10 @@ export default function CustomerGroupTable({
                                         </td>
                                         <td>
                                           <div className="duration-info">
-                                            <Clock size={11} className="clock-icon" />
-                                            <strong>{formatMinutes(durationMins)}</strong>
+                                            <span>
+                                              <Clock size={11} className="clock-icon" />
+                                              <strong>{formatMinutes(durationMins)}</strong>
+                                            </span>
                                             {entry.startTime && entry.endTime && (
                                               <span className="times-sub">
                                                 ({entry.startTime} - {entry.endTime})
